@@ -1,4 +1,4 @@
-# Hướng dẫn client của NKL Bank
+# Hướng dẫn client MPBank của NKL Bank
 Cảm ơn bạn đã lựa chọn sử dụng dịch vụ của NKL Bank, chúc bạn được điểm cao.<br>
 Video hướng dẫn (trăm nghe không bằng một thấy): [Hướng dẫn dành cho client NKLBANK (PGP)](https://youtu.be/lMOxCBtjNGM)
 ## 📦 Tải xuống và chạy thử
@@ -14,9 +14,6 @@ $ cd internet-banking-parner
 # If you're from MPBank
 $ git checkout mpbank
 
-# If you're from s2q-ibank
-$ git checkout s2q-ibank
-
 # Install essential package
 $ npm i
 
@@ -27,10 +24,9 @@ Một webservice đang chạy ở `http://localhost:5000/` nhưng ta chưa làm 
 
 #### Postman collection
 Nếu bạn là mpbank, import **mpbank.postman_collection.json**.<br>
-Nếu bạn là s2q-ibanking, import **s2q-ibanking.postman_collection.json**. Import lộn thì cũng chạy được, nhưng mà chạy của người ta.
 
 ## 🎯 Chỉnh sửa source code
-File cần chỉnh sửa là: **mpbank-client.route.js** hoặc **s2q-ibank-client.route.js** tùy nhánh bạn đang checkout<br>
+File cần chỉnh sửa là: **mpbank-client.route.js**<br>
 Vui lòng xem video thực hiện tốt nhất.
 
 ## 🙏 Acknowledge
