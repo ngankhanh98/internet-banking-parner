@@ -10,6 +10,20 @@ const router = express.Router();
 
 app.use(express.json());
 
+// !!! READONLY
+const fixedData = {
+  secret_key: "H8PIBP9MPMOM",
+  email: "info@mpbank.com"
+}
+
+// begin !!! ALLOW EDIT, thông tin này dùng để generate key pair
+const configPartner = {
+  passphrase: "Parner Bank",
+  name: "Parner Bank",
+}
+// end !!! ALLOW EDIT, thông tin này dùng để generate key pair
+
+
 router.post("/request", async (req, res) => {
   // headers = {
   //   partner_code: "vpbank",
@@ -20,7 +34,7 @@ router.post("/request", async (req, res) => {
   const partner_code = req.headers["partner_code"];
   const timestamp = moment().toString(); // timestamp in seconds
   const data = req.body; // data = { transaction_type: '+/-/?', source_account: '26348364', target_account: '87234934', amount_money: 293234424}
-  const secret_key = "647582139505";
+  const secret_key = fixedData.secret_key;
   let publicKeyArmored;
   const hash = CryptoJS.AES.encrypt(
     JSON.stringify({ data, timestamp, secret_key }),
@@ -35,20 +49,14 @@ router.post("/request", async (req, res) => {
 
   // if data.transaction_type === '+' || '-'
   // pgp signature needed
-
-  // You will need to change:
-  // passphrase: This is a super secret string to generate public key and private key. You should not share it to anyone, even us NKL Bank
-  // userIds: [{ name: "Parner Bank", email: "it_deparment@parnerbank.com" }]
-  // You are to change userIds.name and userIds.email. It's ok if it's leak
-
   var signed_data = null;
 
   if (data.transaction_type === "+" || data.transaction_type === "-") {
     // generate key pair
 
-    const passphrase = "Parner Bank";
+    const passphrase = configPartner.passphrase;
     const { privateKeyArmored, publicKeyArmored } = await openpgp.generateKey({
-      userIds: [{ name: "Parner Bank", email: "it_deparment@partnerbank.com" }],
+      userIds: [{ name: configPartner.name, email: fixedData.email }],
       curve: "ed25519", // ECC curve name
       passphrase: passphrase, // protects the private key
     });
@@ -56,10 +64,8 @@ router.post("/request", async (req, res) => {
     console.log(publicKeyArmored);
 
     // upload public key to HKP server
-      var hkp = new openpgp.HKP();
-      const ret = await hkp.upload(publicKeyArmored);
-      console.log("ret: ");
-      console.log(ret);
+    var hkp = new openpgp.HKP();
+    const ret = await hkp.upload(publicKeyArmored);
 
     // sign with privatekey
     const {
@@ -74,7 +80,8 @@ router.post("/request", async (req, res) => {
     signed_data = cleartext;
     console.log(signed_data);
   }
-  // POST to our server
+
+  // POST to NKLBank server
   axios
     .post(
       "http://localhost:3000/api/partnerbank/request",
@@ -83,11 +90,17 @@ router.post("/request", async (req, res) => {
     )
     .then(function (response) {
       res.status(200).json(response.data);
+      // Phần xử lý dữ liệu của nhóm sẽ nằm ở đây
+      // Ví dụ, sau khỏi gửi gói tin data = { "transaction_type": "-", "source_account": "3234", "target_account": "12345", "amount_money": 2000000 }
+      // Nghĩa là bạn muốn: target_account -2000000 (NKLBank), source_account +2000000 (MPBank)
+      // Đây là khi NKLBank -2000000 của target_account, bạn cần viết code phần MPBank +2000000 vào source_account, kiểu:
+      // const rows = await accountModel.update(`update table_account set account_balance = account_balance + data.amount_money where account_number = data.target_account`)
+
     })
-    .catch(function (error) {
-      console.log(error.response);
-      res.status(error.response.status).send(error.response.data);
-    });
+  .catch(function (error) {
+    console.log(error.response);
+    res.status(error.response.status).send(error.response.data);
+  });
 });
 
 app.use("/", router);
@@ -102,7 +115,7 @@ app.use(function (err, req, res, next) {
   res.status(code).send(err.message);
 });
 
-const PORT = 8080;
+const PORT = 5000;
 app.listen(PORT, (_) => {
   console.log(`API is running at http://localhost:${PORT}`);
 });
