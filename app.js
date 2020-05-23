@@ -10,18 +10,19 @@ const router = express.Router();
 
 app.use(express.json());
 
-// !!! READONLY
+// !!! KHÔNG CHỈNH SỬA
 const fixedData = {
   secret_key: "H8PIBP9MPMOM",
   email: "info@mpbank.com"
 }
+// !!! KHÔNG CHỈNH SỬA
 
-// begin !!! ALLOW EDIT, thông tin này dùng để generate key pair
+// begin !!! CHỈNH ĐƯỢC, thông tin này dùng để generate key pair
 const configPartner = {
   passphrase: "Parner Bank",
   name: "Parner Bank",
 }
-// end !!! ALLOW EDIT, thông tin này dùng để generate key pair
+// end !!! CHỈNH ĐƯỢC, thông tin này dùng để generate key pair
 
 
 router.post("/request", async (req, res) => {
@@ -84,7 +85,7 @@ router.post("/request", async (req, res) => {
   // POST to NKLBank server
   axios
     .post(
-      "http://localhost:3000/api/partnerbank/request",
+      "https://nklbank.herokuapp.com/api/partnerbank/request",
       { data, signed_data },
       { headers: _headers }
     )
@@ -102,6 +103,8 @@ router.post("/request", async (req, res) => {
     res.status(error.response.status).send(error.response.data);
   });
 });
+
+
 
 app.use("/", router);
 
