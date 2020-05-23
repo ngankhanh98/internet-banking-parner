@@ -10,7 +10,7 @@ app.use(express.json());
 
 
 // app.use('<tùy ý em nha>', , require('./PGPpartnerbankClient.route'))
-app.use('/pgp-request', require('./mpbankClient.route'));
+app.use('/pgp-request', require('./s2q-ibank-client.route'));
 
 app.use((req, res, next) => {
   res.status(404).send("NOT FOUND");
