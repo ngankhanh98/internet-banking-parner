@@ -10,7 +10,7 @@ const router = express.Router();
 
 // !!! KHÔNG CHỈNH SỬA
 const fixedData = {
-  secret_key: "qY1CkiM4gI6hOrDXtyRQ",
+  secret_key: "s2qbanking",
   email: "info@s2q-ibank.com"
 }
 // !!! KHÔNG CHỈNH SỬA
