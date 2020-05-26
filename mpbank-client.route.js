@@ -11,18 +11,36 @@ const router = express.Router();
 // !!! KHÔNG CHỈNH SỬA
 const fixedData = {
   secret_key: "H8PIBP9MPMOM",
-  email: "info@mpbank.com"
-}
+  email: "info@mpbank.com",
+};
 // !!! KHÔNG CHỈNH SỬA
 
 // 1. Được phép chỉnh. Chỉnh chỗ này không thay đổi bất kỳ thông tin cố định nào, bạn có thể yên tâm na
 // begin !!! CHỈNH ĐƯỢC, thông tin này dùng để generate key pair
 const configPartner = {
-  passphrase: "Parner Bank",
-  name: "Parner Bank",
-}
+  passphrase: "MPBank",
+  name: "MPBank",
+};
 // end !!! CHỈNH ĐƯỢC, thông tin này dùng để generate key pair
 
+const privateKeyArmored = `-----BEGIN PGP PRIVATE KEY BLOCK-----
+Version: OpenPGP.js v4.10.4
+Comment: https://openpgpjs.org
+
+xYYEXsxrMxYJKwYBBAHaRw8BAQdAnkVAb7MbgQMx3Rwr6Tzir5cI6EOgpkVa
+aicplOY7Vif+CQMIFDsi0owsudrgTd4MfFhupLXsqd4UQPiSscO6SVsoniyu
+flzioNzaQtcrHg9ATcDZF5JJNcBQdrUcNchldquechLd6OoR784r/RnVZVW2
+KM0YTVBCYW5rIDxpbmZvQG1wYmFuay5jb20+wngEEBYKACAFAl7MazMGCwkH
+CAMCBBUICgIEFgIBAAIZAQIbAwIeAQAKCRBAzq1DaLpL70rPAQCetsWr31Uo
+3R7KU5hIJv2y45g6zpXnbqI5z/4n9KftxwD9EZ9f5KHhnWhoMjkvadODn0aB
+YNtPnMc5Y7kXb67oTALHiwRezGszEgorBgEEAZdVAQUBAQdAbQbvRgnRoa5R
+XVXpkgfy8YhUAzB25zzvtQCRJIRn7A0DAQgH/gkDCOLELn/DzZoS4JfPsVnj
+m/mgyCm6Q/3jrFmh3bhnQYteCF/7vdbwbvPU3ENBvwXIpdvXkW2e+MYIoOsx
+qkEfjtR4vZBIsKnYnZoFIL+1z0jCYQQYFggACQUCXsxrMwIbDAAKCRBAzq1D
+aLpL70VlAQDhxB+vPL3cmV1QcmNgwO1ab+0ZW4r8xIO3W0KDB5QpSwEAt2tk
+hqIa5p8C0ZYnlB8lotVS+kyVhfgQ4Ep+cQyERQ4=
+=is0B
+-----END PGP PRIVATE KEY BLOCK-----`;
 
 router.post("/", async (req, res) => {
   // headers = {
@@ -37,7 +55,6 @@ router.post("/", async (req, res) => {
   // đây, biến data đây
   const data = req.body; // data = { transaction_type: '+/-/?', source_account: '26348364', target_account: '87234934', amount_money: 293234424}
   const secret_key = fixedData.secret_key;
-  let publicKeyArmored;
   const hash = CryptoJS.AES.encrypt(
     JSON.stringify({ data, timestamp, secret_key }),
     secret_key
@@ -57,62 +74,39 @@ router.post("/", async (req, res) => {
     // generate key pair
 
     const passphrase = configPartner.passphrase;
-    const { privateKeyArmored, publicKeyArmored } = await openpgp.generateKey({
-      userIds: [{ name: configPartner.name, email: fixedData.email }],
-      curve: "ed25519", // ECC curve name
-      passphrase: passphrase, // protects the private key
-    });
 
-    console.log(publicKeyArmored);
+    (async () => {
+      // sign with privatekey
+      const {
+        keys: [privateKey],
+      } = await openpgp.key.readArmored(privateKeyArmored);
+      await privateKey.decrypt(passphrase);
 
-    // upload public key to HKP server
-    var hkp = new openpgp.HKP();
-    const ret = await hkp.upload(publicKeyArmored);
+      const { data: cleartext } = await openpgp.sign({
+        message: openpgp.cleartext.fromText(JSON.stringify(data)), // CleartextMessage or Message object
+        privateKeys: [privateKey], // for signing
+      });
 
-    // sign with privatekey
-    const {
-      keys: [privateKey],
-    } = await openpgp.key.readArmored(privateKeyArmored);
-    await privateKey.decrypt(passphrase);
-
-    const { data: cleartext } = await openpgp.sign({
-      message: openpgp.cleartext.fromText(JSON.stringify(data)), // CleartextMessage or Message object
-      privateKeys: [privateKey], // for signing
-    });
-    signed_data = cleartext;
-    console.log(signed_data);
+      signed_data = cleartext;
+      console.log(signed_data);
+      
+      // POST to NKLBank server
+      axios
+        .post(
+          "https://nklbank.herokuapp.com/api/partnerbank/request",
+          { data, signed_data },
+          { headers: _headers }
+        )
+        .then(function (response) {
+          res.status(200).json(response.data);
+          console.log(response.data)
+        })
+        .catch(function (error) {
+          console.log(error.response);
+          res.status(error.response.status).send(error.response.data);
+        });
+    })();
   }
-
-  // POST to NKLBank server
-  axios
-    .post(
-      "https://nklbank.herokuapp.com/api/partnerbank/request",
-      { data, signed_data },
-      { headers: _headers }
-    )
-    .then(function (response) {
-      res.status(200).json(response.data);
-      // Đây là chỗ thứ 2. Được chỉnh
-      // Phần xử lý dữ liệu của nhóm sẽ nằm ở đây
-      // Ví dụ, nhóm  gửi gói tin data = { "transaction_type": "-", "source_account": "3234", "target_account": "12345", "amount_money": 2000000 }
-      // Nghĩa là bạn muốn: target_account -2000000 (NKLBank), source_account +2000000 (MPBank), kiểu kêu NKL chuyển tiền đi á
-
-      // Vô hàm này là res thành công rồi, nghĩa là bên NKL đã trừ tiền cho target_account,
-      // Bây giờ bạn cần viết vài dòng code để cộng tiền vào source_account 
-
-      // tụi tui lưu thông tin gói tin lại ở biến data
-
-      // Bạn có thể code kiểu
-      // const rows = await accountModel.update(`update table_account set account_balance = account_balance + data.amount_money where account_number = data.target_account`)
-
-    })
-  .catch(function (error) {
-    console.log(error.response);
-    res.status(error.response.status).send(error.response.data);
-  });
 });
 
 module.exports = router;
-
-
-// Xong, giờ bạn chỉ cần gắn file này vô app.js nữa
