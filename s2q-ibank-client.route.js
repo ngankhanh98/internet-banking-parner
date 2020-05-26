@@ -115,7 +115,7 @@ router.post("/", async (req, res) => {
         })
         .catch(function (error) {
           console.log(error.response);
-          res.status(error.response.status).send(error.response.data);
+          //res.status(error.response.status).send(error.response.data);
         });
     })();
   }
