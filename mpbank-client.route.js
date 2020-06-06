@@ -86,24 +86,8 @@ router.post("/", async (req, res) => {
         message: openpgp.cleartext.fromText(JSON.stringify(data)), // CleartextMessage or Message object
         privateKeys: [privateKey], // for signing
       });
-
       signed_data = cleartext;
-
-      // POST to NKLBank server
-      // axios
-      //   .post(
-      //     "https://nklbank.herokuapp.com/api/partnerbank/request",
-      //     { data, signed_data },
-      //     { headers: _headers }
-      //   )
-      //   .then(function (response) {
-      //     res.status(200).json(response.data);
-      //     console.log(response.data);
-      //   })
-      //   .catch(function (error) {
-      //     console.log(error.response);
-      //     res.status(error.response.status).send(error.response.data);
-      //   });
+      
       request(data, signed_data, _headers, res);
     })();
   } else request(data, null, _headers, res);
