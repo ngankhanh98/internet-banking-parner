@@ -83,8 +83,6 @@ router.post("/", async (req, res) => {
   var signed_data = null;
 
   if (data.transaction_type === "+" || data.transaction_type === "-") {
-    // generate key pair
-
     const passphrase = configPartner.passphrase;
 
     (async () => {
@@ -98,27 +96,27 @@ router.post("/", async (req, res) => {
         message: openpgp.cleartext.fromText(JSON.stringify(data)), // CleartextMessage or Message object
         privateKeys: [privateKey], // for signing
       });
-
       signed_data = cleartext;
-      console.log(signed_data);
-      
-      // POST to NKLBank server
-      axios
-        .post(
-          "https://nklbank.herokuapp.com/api/partnerbank/request",
-          { data, signed_data },
-          { headers: _headers }
-        )
-        .then(function (response) {
-          res.status(200).json(response.data);
-          console.log(response.data)
-        })
-        .catch(function (error) {
-          console.log(error.response);
-          //res.status(error.response.status).send(error.response.data);
-        });
+
+      request(data, signed_data, _headers, res);
     })();
-  }
+  } else request(data, null, _headers, res);
 });
+
+const request = (data, signed_data, _headers, res) =>
+  axios
+    .post(
+      "https://nklbank.herokuapp.com/api/partnerbank/request",
+      { data, signed_data },
+      { headers: _headers }
+    )
+    .then(function (response) {
+      res.status(200).json(response.data);
+      console.log(response.data);
+    })
+    .catch(function (error) {
+      console.log(error.response);
+      res.status(error.response.status).send(error.response.data);
+    });
 
 module.exports = router;
