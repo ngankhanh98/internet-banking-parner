@@ -1,6 +1,5 @@
 # Hướng dẫn client MPBank của NKL Bank
 Cảm ơn bạn đã lựa chọn sử dụng dịch vụ của NKL Bank, chúc bạn được điểm cao.<br>
-Video hướng dẫn (trăm nghe không bằng một thấy): [Hướng dẫn dành cho client NKLBANK (PGP)](https://youtu.be/lMOxCBtjNGM)
 ## 📦 Tải xuống và chạy thử
 #### Source code
 
